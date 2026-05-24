@@ -1,0 +1,22 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold: #C9A84C;
+  --gold-light: #E8D08A;
+  --dark: #1A1612;
+  --dark-mid: #2A2420;
+  --dark-soft: #3A322C;
+  --cream: #F5F0E8;
+  --cream-dark: #E8E0D0;
+  --muted: #8A7A6A;
+}
+
+body {
+  background: var(--dark);
+  color: var(--cream);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse at 20% 20%, rgba(201,168,76,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(201,168,76,0.04) 0%, transparent 60%);
+}
