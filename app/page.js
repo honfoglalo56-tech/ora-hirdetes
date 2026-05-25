@@ -42,6 +42,8 @@ export default function Page() {
   const [caseM, setCaseM] = useState("");
   const [condition, setCondition] = useState("");
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const progressRef = useRef(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [feedback, setFeedback] = useState("");
@@ -71,14 +73,34 @@ export default function Page() {
     return data.text;
   };
 
+  const startProgress = () => {
+    setProgress(0);
+    let current = 0;
+    const targets = [15, 30, 45, 60, 72, 82, 88, 92, 95, 97];
+    let idx = 0;
+    progressRef.current = setInterval(() => {
+      if (idx < targets.length) {
+        current = targets[idx];
+        setProgress(current);
+        idx++;
+      }
+    }, 1800);
+  };
+
+  const stopProgress = () => {
+    if (progressRef.current) clearInterval(progressRef.current);
+    setProgress(100);
+    setTimeout(() => setProgress(0), 800);
+  };
+
   const generate = async () => {
     if (!model.trim()) { setError("Kérlek add meg legalább a márka és modell mezőt."); return; }
-    setError(null); setResult(null); setLoading(true);
+    setError(null); setResult(null); setLoading(true); startProgress();
     try {
       const text = await callAPI({ model, year, caseM, condition, lang, image: imageB64, imageType });
       setResult(text);
     } catch (err) { setError("Hiba történt. Kérlek próbáld újra."); }
-    finally { setLoading(false); }
+    finally { stopProgress(); setLoading(false); }
   };
 
   const refine = async () => {
@@ -170,12 +192,23 @@ export default function Page() {
         </div>
 
         {/* Gomb */}
-        <button style={s.genBtn} onClick={generate} disabled={loading}>
-          {loading ? "Generálás folyamatban…" : "Hirdetési szöveg generálása"}
+        <button style={{...s.genBtn, position: "relative", overflow: "hidden"}} onClick={generate} disabled={loading}>
+          {loading && (
+            <div style={{
+              position: "absolute", left: 0, top: 0, bottom: 0,
+              width: `${progress}%`,
+              background: "rgba(201,168,76,0.15)",
+              transition: "width 1.5s ease",
+              borderRadius: 2,
+            }} />
+          )}
+          <span style={{position: "relative", zIndex: 1}}>
+            {loading ? `Generálás... ${progress}%` : "Hirdetési szöveg generálása"}
+          </span>
         </button>
 
         {error && <div style={s.error}>{error}</div>}
-        {loading && <div style={{ textAlign: "center", color: MU, fontSize: "0.82rem", letterSpacing: "0.1em" }}>Egy pillanat, az óra történetét kutatjuk…</div>}
+
 
         {/* Eredmény */}
         {result && (
