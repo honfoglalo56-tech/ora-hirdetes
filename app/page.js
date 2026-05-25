@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
+import Link from "next/link";
 
 const G = "#C9A84C";
 const GL = "#E8D08A";
@@ -139,11 +140,13 @@ export default function Page() {
       <header style={s.header}>
         <h1 style={s.h1}>Óra Hirdetési Asszisztens</h1>
         <p style={s.sub}>Mutass egy képet, adj meg pár adatot és már kész is</p>
+        <Link href="/references" style={{ display: "inline-block", marginTop: "1rem", color: G, fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>
+          Referenciák →
+        </Link>
       </header>
 
       <div style={s.wrap}>
 
-        {/* Fotó */}
         <div style={s.card}>
           <div style={s.cardTitle}>Fotó</div>
           {!preview ? (
@@ -169,7 +172,6 @@ export default function Page() {
           )}
         </div>
 
-        {/* Adatok */}
         <div style={s.card}>
           <div style={s.cardTitle}>Az óra adatai</div>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
@@ -182,7 +184,6 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Nyelv */}
         <div style={s.card}>
           <div style={s.cardTitle}>Nyelv</div>
           <div style={s.langWrap}>
@@ -191,7 +192,6 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Gomb */}
         <button style={{...s.genBtn, position: "relative", overflow: "hidden"}} onClick={generate} disabled={loading}>
           {loading && (
             <div style={{
@@ -209,8 +209,6 @@ export default function Page() {
 
         {error && <div style={s.error}>{error}</div>}
 
-
-        {/* Eredmény */}
         {result && (
           <div style={{ ...s.card, animation: "fadeIn 0.4s ease" }}>
             <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
@@ -218,30 +216,18 @@ export default function Page() {
             <div style={s.divider} />
             <div style={s.resultText}>{result}</div>
 
-            {/* Visszajelzés */}
             <div style={{ marginTop: "1.5rem" }}>
               <label style={s.label}>Visszajelzés</label>
-              <textarea
-                style={s.textarea}
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                placeholder="Mit változtassak? pl. az első mondat túl marketinges..."
-              />
+              <textarea style={s.textarea} value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Mit változtassak? pl. az első mondat túl marketinges..." />
             </div>
 
-            {/* Végleges szöveg */}
             <div style={{ marginTop: "1rem" }}>
               <button onClick={() => setShowFinal(!showFinal)} style={{ background: "transparent", border: "none", color: MU, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", padding: 0 }}>
                 {showFinal ? "▲ Elrejt" : "▼ Végleges szöveg megadása"}
               </button>
               {showFinal && (
                 <div style={{ marginTop: "0.75rem" }}>
-                  <textarea
-                    style={{ ...s.textarea, minHeight: 120 }}
-                    value={finalText}
-                    onChange={(e) => setFinalText(e.target.value)}
-                    placeholder="Illeszd be a módosított végleges szöveget – ebből tanul a rendszer..."
-                  />
+                  <textarea style={{ ...s.textarea, minHeight: 120 }} value={finalText} onChange={(e) => setFinalText(e.target.value)} placeholder="Illeszd be a módosított végleges szöveget – ebből tanul a rendszer..." />
                   <button onClick={saveFinal} disabled={!finalText.trim()} style={{ ...s.outlineBtn, marginTop: "0.5rem", borderColor: finalSaved ? "#6A8A6A" : G, color: finalSaved ? "#6A8A6A" : GL }}>
                     {finalSaved ? "Elmentve ✓" : "Végleges szöveg mentése"}
                   </button>
@@ -249,7 +235,6 @@ export default function Page() {
               )}
             </div>
 
-            {/* Gombok */}
             <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem", flexWrap: "wrap" }}>
               <button style={s.goldBtn} onClick={copy}>{copied ? "Másolva ✓" : "Másolás"}</button>
               {feedback.trim() && (
