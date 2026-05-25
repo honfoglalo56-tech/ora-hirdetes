@@ -99,9 +99,19 @@ export async function POST(req) {
         ? `Az előző szöveg:\n\n${previousResult}\n\nVisszajelzés: ${feedback}\n\nKérlek írj egy javított verziót a visszajelzés alapján, ugyanolyan stílusban.`
         : `Previous text:\n\n${previousResult}\n\nFeedback: ${feedback}\n\nPlease write an improved version based on the feedback, in the same style.`;
     } else {
+      const trustedSources = [
+        "egalizer.hu",
+        "hodinkee.com",
+        "thetokeiclub.jp",
+        "fratellowatches.com",
+        "monochrome-watches.com",
+        "theseikoguy.com",
+        "calibercorner.com"
+      ].join(", ");
+
       userText = isHu
-        ? `Írj hirdetési szöveget:\n\nMárka/modell: ${model}${year ? `\nGyártási év: ${year}` : ""}${caseM ? `\nTok: ${caseM}` : ""}${condition ? `\nÁllapot/megjegyzések: ${condition}` : ""}${image ? "\n\nA képen látható az óra." : ""}`
-        : `Write a listing:\n\nBrand/model: ${model}${year ? `\nYear: ${year}` : ""}${caseM ? `\nCase: ${caseM}` : ""}${condition ? `\nCondition: ${condition}` : ""}${image ? "\n\nThe watch is shown in the image." : ""}`;
+        ? `Írj hirdetési szöveget az alábbi óráról. FONTOS: Először keresd meg az órát ezeken a megbízható forrásokon: ${trustedSources}. Ha ott nem találsz elegendő információt, keress más forrásokban is. A talált adatokat természetesen dolgozd bele a szövegbe.\n\nMárka/modell: ${model}${year ? `\nGyártási év: ${year}` : ""}${caseM ? `\nTok: ${caseM}` : ""}${condition ? `\nÁllapot/megjegyzések: ${condition}` : ""}${image ? "\n\nA képen látható az óra." : ""}`
+        : `Write a listing for the following watch. IMPORTANT: First search for information on these trusted sources: ${trustedSources}. If not enough information is found there, search other sources as well. Naturally weave the found data into the text.\n\nBrand/model: ${model}${year ? `\nYear: ${year}` : ""}${caseM ? `\nCase: ${caseM}` : ""}${condition ? `\nCondition: ${condition}` : ""}${image ? "\n\nThe watch is shown in the image." : ""}`;
     }
 
     const content = [];
@@ -116,17 +126,28 @@ export async function POST(req) {
         "Content-Type": "application/json",
         "x-api-key": process.env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01",
+        "anthropic-beta": "web-search-2025-03-05",
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-5",
-        max_tokens: 1500,
+        max_tokens: 2000,
         system: systemPrompt,
+        tools: [
+          {
+            type: "web_search_20250305",
+            name: "web_search",
+            max_uses: 3,
+          }
+        ],
         messages: [{ role: "user", content }],
       }),
     });
     const response = await res.json();
     if (response.error) throw new Error(response.error.message);
-    const text = response.content.map((b) => b.text || "").join("");
+    const text = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text || "")
+      .join("");
     return Response.json({ text });
   } catch (err) {
     console.error(err);
