@@ -36,6 +36,17 @@ SPECIÁLIS TUDÁSBÁZIS – KORAI GRAND SEIKO (57GS / Self Dater sorozat):
 - Az SD számlapok (solid gold indexek) a legkeresettebb korai darabok
 - A tropical patina (meleg barna-rózsaszín elszíneződés) a korai GS számlapokon gyűjtői körökben különösen értékes – minden példány egyedi
 
+REFERENCIA SZÖVEG – Grand Seiko 56GS (5646-7010):
+"1959-ben csatlakozott a Seiko-hoz Taro Tanaka, a frissen diplomázott formatervező, aki a márka történetében az első valódi professzionális szakember volt ezen a területen. Legfőbb célja Tanakának az volt, hogy olyan órákat tervezzen, amelyek fantasztikus minőséget és valódi alternatívát nyújtanak a svájciakkal szemben. Elsőként a high-end modellek voltak fókuszban, a Grand Seiko-k és King Seiko-k.
+
+A mára széleskörben ismert Grammar of Design filozófia 1962-ben született meg, amely alapvetően 4 fő pillérre épül. Minden felületnek, ami az órán található síknak és geometriailag tökéletesnek kell lennie, a számlapot körülvevő rámának egyszerű, de mégis íves formát kell kapnia. A vizuális torzítás nem megengedett, mindennek tükörfényesen kell csillognia és végezetül minden toknak egyedinek kell lennie, végleg leszámoltak a generikus, kerek tokformákkal.
+
+Elsőként a csúcs King és Grand Seiko-k készültek ezen elvek alapján, a hirdetésben szereplő 5646-7010 vagy másnéven 56GS a második volt a sorban 1970-ben. Le sem tagadhatná a Tanaka-féle jegyeket, 36 mm-es óratok, csodás borotvaéles letörésekkel és tükrös felületekkel. 41 mm-es magasság mellé csupán 10.2 mm-es vastagság társul, amelyet az ultravékony 5646A szerkezetnek köszönhet. Az automata felhúzással is felszerelt darab, nap-dátum komplikációval is rendelkezik és megfelelő karbantartás után még ma is rendkívüli pontosságot tud.
+
+A számlap több, mint 50 év után remekül öregedett, a világos sárgás-homokszínű árnyalat kiválóan illik az óra hangulatához. A Seiko felirat alatti Automatic felirat mellett büszkén viseli a Hi-Beat (4 Hz-es működés) és a Suwa Seikosha gyár apró S monogrammját is. Itt készültek a 60-as és 70-es években a pazar mechanikus szerkezetek és Grand Seiko-k, illetve Astronok.
+
+Ez az 5646-7010-es Grand Seiko nem csak egy vintage óra a sok közül, hanem a japán márka mérföldköve is sok tekintetben. Egyrészt a Tanaka dizájn koncepció indulásának elejéről származik, amikor még vegytisztán kapta meg az összes stílusjegyet, másrészt technikai oldalról is magasra tették a mércét a benne lévő szerkezettel. Az 56GS külön érdekessége, hogy éppen a kvarcválság hajnalán jelent meg, amely sajnos ezt is elsodorta idővel. Ezzel pedig úgyis tekinthetünk rá, hogy abból a korszakból az utolsó mechanikus szerkezetes Grand Seiko, ugyanis 1975-től átterelődött a hangsúly a kvarc modellekre."
+
 SPECIÁLIS TUDÁSBÁZIS – KING SEIKO 5621 (56-os kalibercsalád):
 - A 5621-es a 56-os automata kalibercsalád tagja – a KS legmegbízhatóbb és hétköznapra is ajánlott vonala
 - Monobloc (egydarabos) tokos kialakítás – a mozgáshoz csak elölről, az üveg eltávolításával lehet hozzáférni
@@ -166,6 +177,11 @@ export async function POST(req) {
       .filter((b) => b.type === "text")
       .map((b) => b.text || "")
       .join("");
+    // Auto-save to history
+    if (!feedback) {
+      await supabase.from("watch_history").insert({ model, text, lang: lang || "hu" });
+    }
+
     return Response.json({ text });
   } catch (err) {
     console.error(err);
