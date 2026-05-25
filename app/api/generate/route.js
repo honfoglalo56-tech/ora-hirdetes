@@ -81,8 +81,23 @@ export async function POST(req) {
       .order("created_at", { ascending: false })
       .limit(15);
 
+    // Load saved feedback rules
+    const { data: feedbackRules } = await supabase
+      .from("watch_feedback")
+      .select("feedback")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
     const isHu = lang === "hu";
     let systemPrompt = isHu ? BASE_SYSTEM_PROMPT_HU : BASE_SYSTEM_PROMPT_EN;
+
+    // Add saved feedback rules
+    if (feedbackRules && feedbackRules.length > 0) {
+      const rulesBlock = isHu
+        ? `\n\nEZEK AZ ÁLLANDÓ STÍLUSSZABÁLYOK – mindig tartsd be őket:\n\n`
+        : `\n\nTHESE ARE PERMANENT STYLE RULES – always follow them:\n\n`;
+      systemPrompt += rulesBlock + feedbackRules.map((f, i) => `${i + 1}. ${f.feedback}`).join("\n");
+    }
 
     // Add saved references
     if (refs && refs.length > 0) {
@@ -95,6 +110,9 @@ export async function POST(req) {
     // Build user message
     let userText;
     if (feedback && previousResult) {
+      // Save feedback rule permanently
+      await supabase.from("watch_feedback").insert({ feedback });
+
       userText = isHu
         ? `Az előző szöveg:\n\n${previousResult}\n\nVisszajelzés: ${feedback}\n\nKérlek írj egy javított verziót a visszajelzés alapján, ugyanolyan stílusban.`
         : `Previous text:\n\n${previousResult}\n\nFeedback: ${feedback}\n\nPlease write an improved version based on the feedback, in the same style.`;
