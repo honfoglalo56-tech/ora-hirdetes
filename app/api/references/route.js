@@ -23,7 +23,7 @@ export async function GET() {
   try {
     const { data, error } = await supabase
       .from("watch_references")
-      .select("id, model, created_at")
+      .select("id, model, text, created_at")
       .order("created_at", { ascending: false });
 
     if (error) throw error;
