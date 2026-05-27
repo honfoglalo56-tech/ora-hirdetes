@@ -137,7 +137,6 @@ export async function POST(req) {
     // Build user message
     let userText;
     if (feedback && previousResult) {
-      // Save feedback rule permanently
       await supabase.from("watch_feedback").insert({ feedback });
 
       userText = isHu
@@ -156,7 +155,7 @@ export async function POST(req) {
 
       userText = isHu
         ? `Írj hirdetési szöveget az alábbi óráról. FONTOS: Először keresd meg az órát ezeken a megbízható forrásokon: ${trustedSources}. Keress magyarul ÉS angolul is – például "King Seiko 5621 tropical patina" és "King Seiko 5621 trópusi patina" formában egyaránt. Ha ott nem találsz elegendő információt, keress más forrásokban is. A talált adatokat természetesen dolgozd bele a szövegbe.\n\nMárka/modell: ${model}${year ? `\nGyártási év: ${year}` : ""}${caseM ? `\nTok: ${caseM}` : ""}${condition ? `\nÁllapot/megjegyzések: ${condition}` : ""}${image ? "\n\nA képen látható az óra." : ""}`
-        : `Write a listing for the following watch. IMPORTANT: First search for information on these trusted sources: ${trustedSources}. Search in both English AND Hungarian to find more sources – for example search "King Seiko 5621 tropical patina" and also "King Seiko 5621 trópusi patina". If not enough information is found there, search other sources as well. Naturally weave the found data into the text.\n\nBrand/model: ${model}${year ? `\nYear: ${year}` : ""}${caseM ? `\nCase: ${caseM}` : ""}${condition ? `\nCondition: ${condition}` : ""}${image ? "\n\nThe watch is shown in the image." : ""}`;
+        : `Write a listing for the following watch. IMPORTANT: First search for information on these trusted sources: ${trustedSources}. Search in both English AND Hungarian to find more sources. If not enough information is found there, search other sources as well. Naturally weave the found data into the text.\n\nBrand/model: ${model}${year ? `\nYear: ${year}` : ""}${caseM ? `\nCase: ${caseM}` : ""}${condition ? `\nCondition: ${condition}` : ""}${image ? "\n\nThe watch is shown in the image." : ""}`;
     }
 
     const content = [];
@@ -177,13 +176,7 @@ export async function POST(req) {
         model: "claude-sonnet-4-5",
         max_tokens: 2000,
         system: systemPrompt,
-        tools: [
-          {
-            type: "web_search_20250305",
-            name: "web_search",
-            max_uses: 3,
-          }
-        ],
+        tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
         messages: [{ role: "user", content }],
       }),
     });
@@ -193,6 +186,7 @@ export async function POST(req) {
       .filter((b) => b.type === "text")
       .map((b) => b.text || "")
       .join("");
+
     // Auto-save to history
     if (!feedback) {
       await supabase.from("watch_history").insert({ model, text, lang: lang || "hu" });
