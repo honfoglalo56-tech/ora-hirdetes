@@ -1,253 +1,210 @@
-"use client";
-import { useState, useRef, useCallback } from "react";
-import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 
-const G = "#C9A84C";
-const GL = "#E8D08A";
-const DM = "#2A2420";
-const DS = "#3A322C";
-const CR = "#F5F0E8";
-const CD = "#E8E0D0";
-const MU = "#8A7A6A";
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
-const s = {
-  wrap: { maxWidth: 800, margin: "0 auto", padding: "2rem 1.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" },
-  header: { textAlign: "center", padding: "2.5rem 2rem 2rem", borderBottom: "1px solid rgba(201,168,76,0.15)" },
-  h1: { fontFamily: "'Playfair Display', serif", fontSize: "clamp(1.5rem, 3vw, 2.4rem)", fontWeight: 400, color: GL, letterSpacing: "0.02em" },
-  sub: { marginTop: "0.4rem", color: MU, fontSize: "0.85rem", fontWeight: 300, letterSpacing: "0.04em" },
-  card: { background: DM, border: "1px solid rgba(201,168,76,0.12)", borderRadius: 2, padding: "1.75rem" },
-  cardTitle: { fontSize: "0.68rem", letterSpacing: "0.15em", textTransform: "uppercase", color: G, marginBottom: "1.25rem", fontWeight: 500 },
-  uploadZone: { border: "1px dashed rgba(201,168,76,0.3)", borderRadius: 2, padding: "2rem", textAlign: "center", cursor: "pointer", background: "rgba(201,168,76,0.02)", transition: "all 0.3s" },
-  preview: { maxWidth: "100%", maxHeight: 280, objectFit: "contain", borderRadius: 2, display: "block", margin: "0 auto" },
-  label: { fontSize: "0.68rem", letterSpacing: "0.12em", textTransform: "uppercase", color: G, fontWeight: 500, display: "block", marginBottom: "0.4rem" },
-  input: { background: DS, border: "1px solid rgba(201,168,76,0.15)", borderRadius: 2, color: CR, fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", padding: "0.6rem 0.8rem", width: "100%", outline: "none" },
-  textarea: { background: DS, border: "1px solid rgba(201,168,76,0.15)", borderRadius: 2, color: CR, fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", padding: "0.6rem 0.8rem", width: "100%", minHeight: 75, resize: "vertical", lineHeight: 1.5, outline: "none" },
-  genBtn: { width: "100%", padding: "0.9rem 2rem", background: "transparent", border: `1px solid ${G}`, color: GL, fontFamily: "'Playfair Display', serif", fontSize: "1rem", fontStyle: "italic", letterSpacing: "0.08em", cursor: "pointer", borderRadius: 2 },
-  goldBtn: { padding: "0.55rem 1.3rem", background: G, color: "#1A1612", border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", fontWeight: 500, cursor: "pointer", borderRadius: 2 },
-  outlineBtn: { padding: "0.55rem 1.3rem", background: "transparent", border: "1px solid rgba(201,168,76,0.25)", color: MU, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", borderRadius: 2 },
-  resultText: { fontSize: "0.9rem", lineHeight: 1.85, color: CD, whiteSpace: "pre-wrap", borderLeft: `2px solid ${G}`, paddingLeft: "1.25rem" },
-  error: { color: "#E87070", fontSize: "0.82rem", padding: "0.7rem 1rem", background: "rgba(232,112,112,0.08)", border: "1px solid rgba(232,112,112,0.2)", borderRadius: 2 },
-  divider: { height: 1, background: `linear-gradient(to right, transparent, rgba(201,168,76,0.2), transparent)`, margin: "0.25rem 0 1.25rem" },
-  row: { display: "grid", gap: "1rem", gridTemplateColumns: "1fr 1fr" },
-  langWrap: { display: "flex", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 2, overflow: "hidden", width: "fit-content" },
-  langBtn: (active) => ({ padding: "0.45rem 1.1rem", background: active ? G : "transparent", color: active ? "#1A1612" : MU, border: "none", fontFamily: "'DM Sans', sans-serif", fontSize: "0.82rem", cursor: "pointer", fontWeight: active ? 500 : 400 }),
-};
+const BASE_SYSTEM_PROMPT_HU = `Te egy tapasztalt óra szakértő és szövegíró vagy. Hirdetési szövegeket írsz órákhoz – nem feltétlenül csak vintage darabokhoz, hanem bármilyen különleges, gyűjtői érdeklődésre számot tartó órához.
 
-export default function Page() {
-  const [lang, setLang] = useState("hu");
-  const [imageB64, setImageB64] = useState(null);
-  const [imageType, setImageType] = useState(null);
-  const [preview, setPreview] = useState(null);
-  const [model, setModel] = useState("");
-  const [year, setYear] = useState("");
-  const [caseM, setCaseM] = useState("");
-  const [condition, setCondition] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const progressRef = useRef(null);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState(null);
-  const [feedback, setFeedback] = useState("");
-  const [refining, setRefining] = useState(false);
-  const [finalText, setFinalText] = useState("");
-  const [showFinal, setShowFinal] = useState(false);
-  const [finalSaved, setFinalSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [drag, setDrag] = useState(false);
-  const fileRef = useRef();
+STÍLUS ÉS HANGNEM:
+- Magabiztos, tudásalapú, de személyes és nem hivalkodó hang
+- Nem győzködsz – elmondod amit tudni kell, és a vevő maga jön rá hogy akarja
+- Kerüld a túlzottan marketinges, nyakatekert vagy érzelgős fordulatokat
+- Hétköznapi, de igényes megfogalmazás – mintha egy hozzáértő barát mesélne az óráról
 
-  const handleFile = (file) => {
-    if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { setError("A kép túl nagy (max 10MB)."); return; }
-    setImageType(file.type);
-    const reader = new FileReader();
-    reader.onload = (e) => { setImageB64(e.target.result.split(",")[1]); setPreview(e.target.result); };
-    reader.readAsDataURL(file);
-  };
+FELÉPÍTÉS:
+- Kezdj kontextussal: a márka, a korszak, a történeti háttér – de csak annyit amennyit az adott darab indokol
+- Ha kevésbé ismert a márka vagy a modell, előbb mutasd be a kontextust
+- Ha erős eredet- vagy filmes történet van mögötte, azt bontsd ki részletesebben
+- A konkrét darab bemutatása után következzenek a műszaki adatok – természetesen beillesztve, soha ne táblázatszerűen
+- Zárd piaci vagy gyűjtői kontextussal – miért érdemes most, miért különleges ez a darab
 
-  const onDrop = useCallback((e) => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]); }, []);
+MŰSZAKI ADATOK:
+- A tok méretét (átmérő, vastagság, tokmagasság) a saját tudásodból keresd ki a modell alapján – ne kérd el a felhasználótól
+- Minden technikai adat mellé adj egy mondatot ami elmagyarázza MIÉRT fontos
+- A szerkezet akkor hangsúlyos ha valóban az adott darab egyik fő értékajánlata
 
-  const callAPI = async (body) => {
-    const res = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data.text;
-  };
+ŐSZINTESÉG:
+- Ha van egy látszólagos hátrány (kisebb méret, dátum nélküli verzió, kézzel húzható), ne hallgasd el – fordítsd előnnyé vagy magyarázd meg miért nem hátrány
+- Pontatlan vagy bizonytalan történeti állítást ne írj bele – inkább hagyd ki
 
-  const startProgress = () => {
-    setProgress(0);
-    let current = 0;
-    const targets = [15, 30, 45, 60, 72, 82, 88, 92, 95, 97];
-    let idx = 0;
-    progressRef.current = setInterval(() => {
-      if (idx < targets.length) {
-        current = targets[idx];
-        setProgress(current);
-        idx++;
-      }
-    }, 1800);
-  };
+SPECIÁLIS TUDÁSBÁZIS – KORAI GRAND SEIKO (57GS / Self Dater sorozat):
+- A 57GS sorozat hivatalos neve "Grand Seiko Self Dater" – ez volt az első Grand Seiko dátumkomplikációval
+- Gyártás: 1963 augusztusától 1968 elejéig
+- Ez Taro Tanaka első Grand Seiko tervezése
+- Az SD számlapok (solid gold indexek) a legkeresettebb korai darabok
+- A tropical patina (meleg barna-rózsaszín elszíneződés) a korai GS számlapokon gyűjtői körökben különösen értékes – minden példány egyedi
 
-  const stopProgress = () => {
-    if (progressRef.current) clearInterval(progressRef.current);
-    setProgress(100);
-    setTimeout(() => setProgress(0), 800);
-  };
+REFERENCIA SZÖVEG – Grand Seiko 56GS (5646-7010):
+"1959-ben csatlakozott a Seiko-hoz Taro Tanaka, a frissen diplomázott formatervező, aki a márka történetében az első valódi professzionális szakember volt ezen a területen. Legfőbb célja Tanakának az volt, hogy olyan órákat tervezzen, amelyek fantasztikus minőséget és valódi alternatívát nyújtanak a svájciakkal szemben. Elsőként a high-end modellek voltak fókuszban, a Grand Seiko-k és King Seiko-k.
 
-  const generate = async () => {
-    if (!model.trim()) { setError("Kérlek add meg legalább a márka és modell mezőt."); return; }
-    setError(null); setResult(null); setLoading(true); startProgress();
-    try {
-      const text = await callAPI({ model, year, caseM, condition, lang, image: imageB64, imageType });
-      setResult(text);
-    } catch (err) { setError("Hiba történt. Kérlek próbáld újra."); }
-    finally { stopProgress(); setLoading(false); }
-  };
+A mára széleskörben ismert Grammar of Design filozófia 1962-ben született meg, amely alapvetően 4 fő pillérre épül. Minden felületnek, ami az órán található síknak és geometriailag tökéletesnek kell lennie, a számlapot körülvevő rámának egyszerű, de mégis íves formát kell kapnia. A vizuális torzítás nem megengedett, mindennek tükörfényesen kell csillognia és végezetül minden toknak egyedinek kell lennie, végleg leszámoltak a generikus, kerek tokformákkal.
 
-  const refine = async () => {
-    if (!feedback.trim()) return;
-    setRefining(true); setError(null);
-    try {
-      const text = await callAPI({ model, year, caseM, condition, lang, image: imageB64, imageType, feedback, previousResult: result });
-      setResult(text); setFeedback("");
-    } catch (err) { setError("Hiba történt a finomítás során."); }
-    finally { setRefining(false); }
-  };
+Elsőként a csúcs King és Grand Seiko-k készültek ezen elvek alapján, a hirdetésben szereplő 5646-7010 vagy másnéven 56GS a második volt a sorban 1970-ben. Le sem tagadhatná a Tanaka-féle jegyeket, 36 mm-es óratok, csodás borotvaéles letörésekkel és tükrös felületekkel. 41 mm-es magasság mellé csupán 10.2 mm-es vastagság társul, amelyet az ultravékony 5646A szerkezetnek köszönhet. Az automata felhúzással is felszerelt darab, nap-dátum komplikációval is rendelkezik és megfelelő karbantartás után még ma is rendkívüli pontosságot tud.
 
-  const saveFinal = async () => {
-    if (!finalText.trim()) return;
-    try {
-      const res = await fetch("/api/references", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model, text: finalText }) });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setFinalSaved(true);
-      setTimeout(() => { setFinalSaved(false); setShowFinal(false); setFinalText(""); }, 2000);
-    } catch (err) { setError("Hiba a mentés során."); }
-  };
+A számlap több, mint 50 év után remekül öregedett, a világos sárgás-homokszínű árnyalat kiválóan illik az óra hangulatához. A Seiko felirat alatti Automatic felirat mellett büszkén viseli a Hi-Beat (4 Hz-es működés) és a Suwa Seikosha gyár apró S monogrammját is. Itt készültek a 60-as és 70-es években a pazar mechanikus szerkezetek és Grand Seiko-k, illetve Astronok.
 
-  const copy = () => {
-    navigator.clipboard.writeText(result).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
-  };
+Ez az 5646-7010-es Grand Seiko nem csak egy vintage óra a sok közül, hanem a japán márka mérföldköve is sok tekintetben. Egyrészt a Tanaka dizájn koncepció indulásának elejéről származik, amikor még vegytisztán kapta meg az összes stílusjegyet, másrészt technikai oldalról is magasra tették a mércét a benne lévő szerkezettel. Az 56GS külön érdekessége, hogy éppen a kvarcválság hajnalán jelent meg, amely sajnos ezt is elsodorta idővel. Ezzel pedig úgyis tekinthetünk rá, hogy abból a korszakból az utolsó mechanikus szerkezetes Grand Seiko, ugyanis 1975-től átterelődött a hangsúly a kvarc modellekre."
 
-  const reset = () => {
-    setModel(""); setYear(""); setCaseM(""); setCondition("");
-    setImageB64(null); setImageType(null); setPreview(null);
-    setResult(null); setError(null); setFeedback("");
-  };
+REFERENCIA SZÖVEG – Grand Seiko 5645-5010, négyzetes tok:
+"A Seiko történetében Taro Tanaka neve összeforrt a márka időtállóságával és formai megújulásával. 1959-ben kezdett el dolgozni a cégnél formatervezőként, aki tulajdonképpen az első professzionális szakember volt ezen a területen a Seiko-nál. A küldetése az volt Tanakának, hogy olyan órákat tervezzen, amelyek fantasztikus minőséget és attraktív megjelenést biztosítanak a konkurenciával szemben. Ezt célkeresztben tartva 1962-ben született meg a Grammar of Design filozófia, amely alapvetően 4 fő pillérre épül. Minden felületnek, ami az órán található síknak és geometriailag tökéletesnek kell lennie, a számlapot körülvevő rámának egyszerű, de mégis íves formát kell kapnia. A vizuális torzítás nem megengedett, mindennek tükörfényesen kell csillognia és végezetül minden toknak egyedinek kell lennie, végleg leszámoltak a generikus, kerek tokformákkal.
 
-  return (
-    <>
-      <header style={s.header}>
-        <h1 style={s.h1}>Óra Hirdetési Asszisztens</h1>
-        <p style={s.sub}>Mutass egy képet, adj meg pár adatot és már kész is</p>
-        <Link href="/references" style={{ display: "inline-block", marginTop: "1rem", color: G, fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", textDecoration: "none" }}>
-          Referenciák →
-        </Link>
-      </header>
+Elsőként a King és Grand Seiko-k készültek ezen elvek alapján, a hirdetésben szereplő 5645-5010 pedig egy igazán méltó megtestesítője ennek a szellemiségnek, még ha nem is feltétlen felel meg minden kritériumnak. Az 1973-as katalógusban megjelenő modell legnagyobb érdekessége a négyzet alakú tok, amely azóta is egyedi, hiszen több mechanikus Grand Seiko nem készült ilyen formában. Ugyan a 35 mm x 41 mm-es méret első hallásra erősen vintage méret, viszont a Santos és a Monaco óta tudjuk, hogy ez a négyzetes tok nagyobbnak hat. A borotvaéles letörések és a tükrös felületek itt is megvannak és csupán 10.5 mm vastag a tok, amelyet az ultravékony 5646A szerkezetnek köszönhet. Az automata felhúzással is felszerelt darab, kanji japán nap és dátum komplikációval rendelkezik és megfelelő karbantartás után még ma is rendkívüli pontosságot tud.
 
-      <div style={s.wrap}>
+A számlap Kira-Zuri textúrát kapott, amely gradiens sárga-fehér-barna árnyalatokban pompázik. A mintázat jelentése csillogó festészet, amely a japán festészeti technikából inspirálódik. Az ukiyo-e festményekben gyakran alkalmazták ezt a módszert, hogy a kabuki-színészek hátterének a textúráját jobban megmutassák. Ez, a számlapot tekintve tökéletesen működik is, hiszen ahogyan az órát forgatjuk úgy válnak láthatóvá az egyes rétegek és mélységek.
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Fotó</div>
-          {!preview ? (
-            <div
-              style={{ ...s.uploadZone, borderColor: drag ? G : "rgba(201,168,76,0.3)" }}
-              onClick={() => fileRef.current.click()}
-              onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-              onDragLeave={() => setDrag(false)}
-              onDrop={onDrop}
-            >
-              <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={(e) => handleFile(e.target.files[0])} />
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke={MU} strokeWidth="1.5" style={{ margin: "0 auto 0.75rem", display: "block" }}>
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <strong style={{ display: "block", color: CD, fontSize: "0.9rem", marginBottom: "0.25rem" }}>Húzd ide a képet vagy kattints</strong>
-              <span style={{ color: MU, fontSize: "0.8rem" }}>JPG, PNG – maximum 10MB</span>
-            </div>
-          ) : (
-            <div style={{ textAlign: "center" }}>
-              <img src={preview} style={s.preview} alt="Előnézet" />
-              <button style={{ ...s.outlineBtn, marginTop: "0.75rem" }} onClick={() => { setPreview(null); setImageB64(null); }}>Kép cseréje</button>
-            </div>
-          )}
-        </div>
+Ez az 5645-5010-es igazi kuriózum még az egyébként is ritka, vintage Grand Seiko-k körében. Ugyan nem limitált modellről van szó, de a gyártása korlátozott ideig történt és emiatt rendkívül nehéz beszerezni ezt az órát. Nem véletlenül vált a gyűjtők kedvencévé az elmúlt időszakban, de ez nem csak az alacsony darabszám miatt van. Az unikális tokforma, a magas minőségű és nagy odafigyeléssel összerakott szerkezet illetve az új Grand Seiko-knál is alkalmazott számlap textúra kombinációja adja a különlegességét."
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Az óra adatai</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div style={s.row}>
-              <div><label style={s.label}>Márka és modell *</label><input style={s.input} value={model} onChange={(e) => setModel(e.target.value)} placeholder="pl. King Seiko 45KS Hi-Beat" /></div>
-              <div><label style={s.label}>Gyártási év / korszak</label><input style={s.input} value={year} onChange={(e) => setYear(e.target.value)} placeholder="pl. 1968–1974" /></div>
-            </div>
-            <div><label style={s.label}>Tok anyaga</label><input style={s.input} value={caseM} onChange={(e) => setCaseM(e.target.value)} placeholder="pl. aranyozott acél, rozsdamentes" /></div>
-            <div><label style={s.label}>Állapot és különlegességek</label><textarea style={s.textarea} value={condition} onChange={(e) => setCondition(e.target.value)} placeholder="pl. frissen szervizelt, tropical patina, eredeti számlap..." /></div>
-          </div>
-        </div>
+SPECIÁLIS TUDÁSBÁZIS – KING SEIKO 5621 (56-os kalibercsalád):
+- A 5621-es a 56-os automata kalibercsalád tagja – a KS legmegbízhatóbb és hétköznapra is ajánlott vonala
+- Monobloc (egydarabos) tokos kialakítás – a mozgáshoz csak elölről, az üveg eltávolításával lehet hozzáférni
+- A dátum nélküli (5621-7020) változat ritkább és vizuálisan tisztább mint a dátumos verzió
+- A KS általában alulértékelt a GS-hez képest, holott a kivitelezési minőség közel azonos szintű
 
-        <div style={s.card}>
-          <div style={s.cardTitle}>Nyelv</div>
-          <div style={s.langWrap}>
-            <button style={s.langBtn(lang === "hu")} onClick={() => setLang("hu")}>Magyar</button>
-            <button style={s.langBtn(lang === "en")} onClick={() => setLang("en")}>English</button>
-          </div>
-        </div>
+TERJEDELEM: 4-6 bekezdés, az óra jellegétől függően. Mindig magyarul írj.`;
 
-        <button style={{...s.genBtn, position: "relative", overflow: "hidden"}} onClick={generate} disabled={loading}>
-          {loading && (
-            <div style={{
-              position: "absolute", left: 0, top: 0, bottom: 0,
-              width: `${progress}%`,
-              background: "rgba(201,168,76,0.15)",
-              transition: "width 1.5s ease",
-              borderRadius: 2,
-            }} />
-          )}
-          <span style={{position: "relative", zIndex: 1}}>
-            {loading ? `Generálás... ${progress}%` : "Hirdetési szöveg generálása"}
-          </span>
-        </button>
+const BASE_SYSTEM_PROMPT_EN = `You are an experienced watch expert and copywriter. You write listing texts for watches – not only vintage pieces but any special, collector-grade watch.
 
-        {error && <div style={s.error}>{error}</div>}
+STYLE AND TONE:
+- Confident, knowledge-based, personal but never boastful
+- Don't oversell – state what needs to be said, let the buyer draw their own conclusions
+- Avoid overly marketing-speak, convoluted or sentimental phrases
+- Everyday but refined language – as if a knowledgeable friend is talking about the watch
 
-        {result && (
-          <div style={{ ...s.card, animation: "fadeIn 0.4s ease" }}>
-            <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }`}</style>
-            <div style={s.cardTitle}>Generált hirdetési szöveg</div>
-            <div style={s.divider} />
-            <div style={s.resultText}>{result}</div>
+STRUCTURE:
+- Start with context: the brand, the era, historical background – but only as much as the piece warrants
+- For lesser-known brands or models, introduce the context first
+- If there is a strong origin story or cultural connection, develop it in detail
+- After introducing the piece, include technical details – woven in naturally, never in list form
+- Close with market or collector context – why now, why this piece
 
-            <div style={{ marginTop: "1.5rem" }}>
-              <label style={s.label}>Visszajelzés</label>
-              <textarea style={s.textarea} value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Mit változtassak? pl. az első mondat túl marketinges..." />
-            </div>
+TECHNICAL DATA:
+- Look up case dimensions from your own knowledge based on the model – do not ask the user
+- Every technical detail should be accompanied by a sentence explaining WHY it matters
+- The movement deserves emphasis only when it is a core value proposition of the piece
 
-            <div style={{ marginTop: "1rem" }}>
-              <button onClick={() => setShowFinal(!showFinal)} style={{ background: "transparent", border: "none", color: MU, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", padding: 0 }}>
-                {showFinal ? "▲ Elrejt" : "▼ Végleges szöveg megadása"}
-              </button>
-              {showFinal && (
-                <div style={{ marginTop: "0.75rem" }}>
-                  <textarea style={{ ...s.textarea, minHeight: 120 }} value={finalText} onChange={(e) => setFinalText(e.target.value)} placeholder="Illeszd be a módosított végleges szöveget – ebből tanul a rendszer..." />
-                  <button onClick={saveFinal} disabled={!finalText.trim()} style={{ ...s.outlineBtn, marginTop: "0.5rem", borderColor: finalSaved ? "#6A8A6A" : G, color: finalSaved ? "#6A8A6A" : GL }}>
-                    {finalSaved ? "Elmentve ✓" : "Végleges szöveg mentése"}
-                  </button>
-                </div>
-              )}
-            </div>
+HONESTY:
+- If there is an apparent drawback, do not hide it – reframe it or explain why it is not a drawback
+- Do not include inaccurate or uncertain historical claims – leave them out instead
 
-            <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem", flexWrap: "wrap" }}>
-              <button style={s.goldBtn} onClick={copy}>{copied ? "Másolva ✓" : "Másolás"}</button>
-              {feedback.trim() && (
-                <button style={{ ...s.outlineBtn, borderColor: G, color: GL }} onClick={refine} disabled={refining}>
-                  {refining ? "Finomítás…" : "Finomítás visszajelzés alapján"}
-                </button>
-              )}
-              <button style={s.outlineBtn} onClick={reset}>Új hirdetés</button>
-            </div>
-          </div>
-        )}
+LENGTH: 4-6 paragraphs depending on the nature of the watch. Always write in English.`;
 
-      </div>
-    </>
-  );
+export async function POST(req) {
+  try {
+    const { model, year, caseM, condition, lang, platform, image, imageType, feedback, previousResult } = await req.json();
+
+    // Load saved references from Supabase
+    const { data: refs } = await supabase
+      .from("watch_references")
+      .select("model, text")
+      .order("created_at", { ascending: false })
+      .limit(15);
+
+    // Load saved feedback rules
+    const { data: feedbackRules } = await supabase
+      .from("watch_feedback")
+      .select("feedback")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    const isHu = lang === "hu";
+    let systemPrompt = isHu ? BASE_SYSTEM_PROMPT_HU : BASE_SYSTEM_PROMPT_EN;
+
+    // Platform specific instructions
+    if (platform === "facebook") {
+      systemPrompt += isHu
+        ? "
+
+PLATFORM: Facebook hirdetés. Hosszabb, részletesebb, storytelling jellegű szöveg. 4-6 bekezdés."
+        : "
+
+PLATFORM: Facebook listing. Longer, detailed, storytelling style. 4-6 paragraphs.";
+    }
+
+    // Add saved feedback rules
+    if (feedbackRules && feedbackRules.length > 0) {
+      const rulesBlock = isHu
+        ? `\n\nEZEK AZ ÁLLANDÓ STÍLUSSZABÁLYOK – mindig tartsd be őket:\n\n`
+        : `\n\nTHESE ARE PERMANENT STYLE RULES – always follow them:\n\n`;
+      systemPrompt += rulesBlock + feedbackRules.map((f, i) => `${i + 1}. ${f.feedback}`).join("\n");
+    }
+
+    // Add saved references
+    if (refs && refs.length > 0) {
+      const block = isHu
+        ? `\n\nEZEK A KORÁBBI VÉGLEGES SZÖVEGEK – tanuld meg a stílusukat és kövesd:\n\n`
+        : `\n\nPREVIOUS APPROVED FINAL TEXTS – learn from their style:\n\n`;
+      systemPrompt += block + refs.map((r, i) => `${i + 1}. (${r.model}):\n${r.text}`).join("\n\n");
+    }
+
+    // Build user message
+    let userText;
+    if (feedback && previousResult) {
+      // Save feedback rule permanently
+      await supabase.from("watch_feedback").insert({ feedback });
+
+      userText = isHu
+        ? `Az előző szöveg:\n\n${previousResult}\n\nVisszajelzés: ${feedback}\n\nKérlek írj egy javított verziót a visszajelzés alapján, ugyanolyan stílusban.`
+        : `Previous text:\n\n${previousResult}\n\nFeedback: ${feedback}\n\nPlease write an improved version based on the feedback, in the same style.`;
+    } else {
+      const trustedSources = [
+        "egalizer.hu",
+        "hodinkee.com",
+        "thetokeiclub.jp",
+        "fratellowatches.com",
+        "monochrome-watches.com",
+        "theseikoguy.com",
+        "calibercorner.com"
+      ].join(", ");
+
+      userText = isHu
+        ? `Írj hirdetési szöveget az alábbi óráról. FONTOS: Először keresd meg az órát ezeken a megbízható forrásokon: ${trustedSources}. Ha ott nem találsz elegendő információt, keress más forrásokban is. A talált adatokat természetesen dolgozd bele a szövegbe.\n\nMárka/modell: ${model}${year ? `\nGyártási év: ${year}` : ""}${caseM ? `\nTok: ${caseM}` : ""}${condition ? `\nÁllapot/megjegyzések: ${condition}` : ""}${image ? "\n\nA képen látható az óra." : ""}`
+        : `Write a listing for the following watch. IMPORTANT: First search for information on these trusted sources: ${trustedSources}. If not enough information is found there, search other sources as well. Naturally weave the found data into the text.\n\nBrand/model: ${model}${year ? `\nYear: ${year}` : ""}${caseM ? `\nCase: ${caseM}` : ""}${condition ? `\nCondition: ${condition}` : ""}${image ? "\n\nThe watch is shown in the image." : ""}`;
+    }
+
+    const content = [];
+    if (image) {
+      content.push({ type: "image", source: { type: "base64", media_type: imageType || "image/jpeg", data: image } });
+    }
+    content.push({ type: "text", text: userText });
+
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": process.env.ANTHROPIC_API_KEY,
+        "anthropic-version": "2023-06-01",
+        "anthropic-beta": "web-search-2025-03-05",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-5",
+        max_tokens: 2000,
+        system: systemPrompt,
+        tools: [
+          {
+            type: "web_search_20250305",
+            name: "web_search",
+            max_uses: 3,
+          }
+        ],
+        messages: [{ role: "user", content }],
+      }),
+    });
+    const response = await res.json();
+    if (response.error) throw new Error(response.error.message);
+    const text = response.content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text || "")
+      .join("");
+    // Auto-save to history
+    if (!feedback) {
+      await supabase.from("watch_history").insert({ model, text, lang: lang || "hu" });
+    }
+
+    return Response.json({ text });
+  } catch (err) {
+    console.error(err);
+    return Response.json({ error: err.message }, { status: 500 });
+  }
 }
