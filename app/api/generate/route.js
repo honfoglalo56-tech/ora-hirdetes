@@ -47,6 +47,15 @@ A számlap több, mint 50 év után remekül öregedett, a világos sárgás-hom
 
 Ez az 5646-7010-es Grand Seiko nem csak egy vintage óra a sok közül, hanem a japán márka mérföldköve is sok tekintetben. Egyrészt a Tanaka dizájn koncepció indulásának elejéről származik, amikor még vegytisztán kapta meg az összes stílusjegyet, másrészt technikai oldalról is magasra tették a mércét a benne lévő szerkezettel. Az 56GS külön érdekessége, hogy éppen a kvarcválság hajnalán jelent meg, amely sajnos ezt is elsodorta idővel. Ezzel pedig úgyis tekinthetünk rá, hogy abból a korszakból az utolsó mechanikus szerkezetes Grand Seiko, ugyanis 1975-től átterelődött a hangsúly a kvarc modellekre."
 
+REFERENCIA SZÖVEG – Grand Seiko 5645-5010, négyzetes tok:
+"A Seiko történetében Taro Tanaka neve összeforrt a márka időtállóságával és formai megújulásával. 1959-ben kezdett el dolgozni a cégnél formatervezőként, aki tulajdonképpen az első professzionális szakember volt ezen a területen a Seiko-nál. A küldetése az volt Tanakának, hogy olyan órákat tervezzen, amelyek fantasztikus minőséget és attraktív megjelenést biztosítanak a konkurenciával szemben. Ezt célkeresztben tartva 1962-ben született meg a Grammar of Design filozófia, amely alapvetően 4 fő pillérre épül. Minden felületnek, ami az órán található síknak és geometriailag tökéletesnek kell lennie, a számlapot körülvevő rámának egyszerű, de mégis íves formát kell kapnia. A vizuális torzítás nem megengedett, mindennek tükörfényesen kell csillognia és végezetül minden toknak egyedinek kell lennie, végleg leszámoltak a generikus, kerek tokformákkal.
+
+Elsőként a King és Grand Seiko-k készültek ezen elvek alapján, a hirdetésben szereplő 5645-5010 pedig egy igazán méltó megtestesítője ennek a szellemiségnek, még ha nem is feltétlen felel meg minden kritériumnak. Az 1973-as katalógusban megjelenő modell legnagyobb érdekessége a négyzet alakú tok, amely azóta is egyedi, hiszen több mechanikus Grand Seiko nem készült ilyen formában. Ugyan a 35 mm x 41 mm-es méret első hallásra erősen vintage méret, viszont a Santos és a Monaco óta tudjuk, hogy ez a négyzetes tok nagyobbnak hat. A borotvaéles letörések és a tükrös felületek itt is megvannak és csupán 10.5 mm vastag a tok, amelyet az ultravékony 5646A szerkezetnek köszönhet. Az automata felhúzással is felszerelt darab, kanji japán nap és dátum komplikációval rendelkezik és megfelelő karbantartás után még ma is rendkívüli pontosságot tud.
+
+A számlap Kira-Zuri textúrát kapott, amely gradiens sárga-fehér-barna árnyalatokban pompázik. A mintázat jelentése csillogó festészet, amely a japán festészeti technikából inspirálódik. Az ukiyo-e festményekben gyakran alkalmazták ezt a módszert, hogy a kabuki-színészek hátterének a textúráját jobban megmutassák. Ez, a számlapot tekintve tökéletesen működik is, hiszen ahogyan az órát forgatjuk úgy válnak láthatóvá az egyes rétegek és mélységek.
+
+Ez az 5645-5010-es igazi kuriózum még az egyébként is ritka, vintage Grand Seiko-k körében. Ugyan nem limitált modellről van szó, de a gyártása korlátozott ideig történt és emiatt rendkívül nehéz beszerezni ezt az órát. Nem véletlenül vált a gyűjtők kedvencévé az elmúlt időszakban, de ez nem csak az alacsony darabszám miatt van. Az unikális tokforma, a magas minőségű és nagy odafigyeléssel összerakott szerkezet illetve az új Grand Seiko-knál is alkalmazott számlap textúra kombinációja adja a különlegességét."
+
 SPECIÁLIS TUDÁSBÁZIS – KING SEIKO 5621 (56-os kalibercsalád):
 - A 5621-es a 56-os automata kalibercsalád tagja – a KS legmegbízhatóbb és hétköznapra is ajánlott vonala
 - Monobloc (egydarabos) tokos kialakítás – a mozgáshoz csak elölről, az üveg eltávolításával lehet hozzáférni
@@ -83,7 +92,7 @@ LENGTH: 4-6 paragraphs depending on the nature of the watch. Always write in Eng
 
 export async function POST(req) {
   try {
-    const { model, year, caseM, condition, lang, image, imageType, feedback, previousResult } = await req.json();
+    const { model, year, caseM, condition, lang, platform, image, imageType, feedback, previousResult } = await req.json();
 
     // Load saved references from Supabase
     const { data: refs } = await supabase
@@ -101,6 +110,17 @@ export async function POST(req) {
 
     const isHu = lang === "hu";
     let systemPrompt = isHu ? BASE_SYSTEM_PROMPT_HU : BASE_SYSTEM_PROMPT_EN;
+
+    // Platform specific instructions
+    if (platform === "facebook") {
+      systemPrompt += isHu
+        ? "
+
+PLATFORM: Facebook hirdetés. Hosszabb, részletesebb, storytelling jellegű szöveg. 4-6 bekezdés."
+        : "
+
+PLATFORM: Facebook listing. Longer, detailed, storytelling style. 4-6 paragraphs.";
+    }
 
     // Add saved feedback rules
     if (feedbackRules && feedbackRules.length > 0) {
