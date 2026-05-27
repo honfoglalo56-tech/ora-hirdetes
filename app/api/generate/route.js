@@ -114,12 +114,8 @@ export async function POST(req) {
     // Platform specific instructions
     if (platform === "facebook") {
       systemPrompt += isHu
-        ? "
-
-PLATFORM: Facebook hirdetés. Hosszabb, részletesebb, storytelling jellegű szöveg. 4-6 bekezdés."
-        : "
-
-PLATFORM: Facebook listing. Longer, detailed, storytelling style. 4-6 paragraphs.";
+        ? "\n\nPLATFORM: Facebook hirdetés. Hosszabb, részletesebb, storytelling jellegű szöveg. 4-6 bekezdés."
+        : "\n\nPLATFORM: Facebook listing. Longer, detailed, storytelling style. 4-6 paragraphs.";
     }
 
     // Add saved feedback rules
