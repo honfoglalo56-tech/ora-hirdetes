@@ -55,6 +55,8 @@ export default function Page() {
   const [finalSaved, setFinalSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [drag, setDrag] = useState(false);
+  const [prices, setPrices] = useState(null);
+  const [pricesLoading, setPricesLoading] = useState(false);
   const fileRef = useRef();
 
   const handleFile = (file) => {
@@ -95,6 +97,25 @@ export default function Page() {
     setTimeout(() => setProgress(0), 800);
   };
 
+  const fetchPrices = async () => {
+    setPricesLoading(true);
+    setPrices(null);
+    try {
+      const res = await fetch("/api/prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model, year })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setPrices(data.prices || []);
+    } catch (err) {
+      setPrices([]);
+    } finally {
+      setPricesLoading(false);
+    }
+  };
+
   const generate = async () => {
     if (!model.trim()) { setError("Kérlek add meg legalább a márka és modell mezőt."); return; }
     setError(null); setResult(null); setLoading(true); startProgress();
@@ -133,7 +154,7 @@ export default function Page() {
   const reset = () => {
     setModel(""); setYear(""); setCaseM(""); setCondition("");
     setImageB64(null); setImageType(null); setPreview(null);
-    setResult(null); setError(null); setFeedback("");
+    setResult(null); setError(null); setFeedback(""); setPrices(null);
   };
 
   return (
@@ -260,8 +281,43 @@ export default function Page() {
                   {refining ? "Finomítás…" : "Finomítás visszajelzés alapján"}
                 </button>
               )}
+              <button style={{ ...s.outlineBtn, borderColor: G, color: GL }} onClick={fetchPrices} disabled={pricesLoading}>
+                {pricesLoading ? "Árak keresése…" : "Hasonló eladások"}
+              </button>
               <button style={s.outlineBtn} onClick={reset}>Új hirdetés</button>
             </div>
+
+            {pricesLoading && (
+              <div style={{ marginTop: "1rem", color: MU, fontSize: "0.82rem", letterSpacing: "0.08em" }}>
+                Platformokat keresem…
+              </div>
+            )}
+
+            {prices && prices.length > 0 && (
+              <div style={{ marginTop: "1.5rem" }}>
+                <div style={{ ...s.cardTitle, marginBottom: "1rem" }}>Hasonló eladások</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                  {prices.map((p, i) => (
+                    <div key={i} style={{ background: "rgba(201,168,76,0.04)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 2, padding: "0.75rem 1rem", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+                      <div>
+                        <div style={{ fontSize: "0.78rem", color: G, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: "0.2rem" }}>{p.platform}</div>
+                        <div style={{ fontSize: "0.82rem", color: MU }}>{p.condition} {p.date && `· ${p.date}`}</div>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                        <div style={{ fontSize: "1rem", color: CD, fontFamily: "'Playfair Display', serif" }}>{p.price}</div>
+                        {p.url && (
+                          <a href={p.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: "0.72rem", color: G, letterSpacing: "0.06em", textTransform: "uppercase", textDecoration: "none" }}>→</a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {prices && prices.length === 0 && !pricesLoading && (
+              <div style={{ marginTop: "1rem", color: MU, fontSize: "0.82rem" }}>Nem találtam hasonló eladásokat.</div>
+            )}
           </div>
         )}
 
