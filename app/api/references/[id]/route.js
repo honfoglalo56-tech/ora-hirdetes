@@ -1,17 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
+import { NextResponse } from "next/server";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-export async function DELETE(req, { params }) {
+export async function DELETE(req, context) {
   try {
-    const { id } = params;
-    const { error } = await supabase.from("watch_references").delete().eq("id", id);
+    const id = context.params.id;
+    const { error } = await supabase
+      .from("watch_references")
+      .delete()
+      .eq("id", id);
     if (error) throw error;
-    return Response.json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    console.error(err);
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
