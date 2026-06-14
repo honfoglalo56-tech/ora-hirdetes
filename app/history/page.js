@@ -15,6 +15,9 @@ export default function HistoryPage() {
   const [expanded, setExpanded] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [copied, setCopied] = useState(null);
+  const [finalTexts, setFinalTexts] = useState({});
+  const [showFinal, setShowFinal] = useState({});
+  const [finalSaved, setFinalSaved] = useState({});
 
   const loadHistory = useCallback(async () => {
     setLoading(true);
@@ -44,6 +47,28 @@ export default function HistoryPage() {
       console.error(err);
     } finally {
       setDeleting(null);
+    }
+  };
+
+  const saveFinal = async (item) => {
+    const text = finalTexts[item.id];
+    if (!text || !text.trim()) return;
+    try {
+      const res = await fetch("/api/references", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: item.model, text })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      setFinalSaved(prev => ({ ...prev, [item.id]: true }));
+      setTimeout(() => {
+        setFinalSaved(prev => ({ ...prev, [item.id]: false }));
+        setShowFinal(prev => ({ ...prev, [item.id]: false }));
+        setFinalTexts(prev => ({ ...prev, [item.id]: "" }));
+      }, 2000);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -140,6 +165,33 @@ export default function HistoryPage() {
               <div style={{ borderTop: "1px solid rgba(201,168,76,0.1)", padding: "1.25rem 1.5rem" }}>
                 <div style={{ fontSize: "0.88rem", lineHeight: 1.8, color: CD, whiteSpace: "pre-wrap", borderLeft: `2px solid ${G}`, paddingLeft: "1.25rem" }}>
                   {item.text}
+                </div>
+
+                <div style={{ marginTop: "1.25rem" }}>
+                  <button
+                    onClick={() => setShowFinal(prev => ({ ...prev, [item.id]: !prev[item.id] }))}
+                    style={{ background: "transparent", border: "none", color: MU, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", padding: 0 }}
+                  >
+                    {showFinal[item.id] ? "▲ Elrejt" : "▼ Végleges szöveg megadása"}
+                  </button>
+
+                  {showFinal[item.id] && (
+                    <div style={{ marginTop: "0.75rem" }}>
+                      <textarea
+                        value={finalTexts[item.id] || ""}
+                        onChange={e => setFinalTexts(prev => ({ ...prev, [item.id]: e.target.value }))}
+                        placeholder="Illeszd be a módosított végleges szöveget – átkerül a referenciák közé..."
+                        style={{ background: "#3A322C", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 2, color: "#F5F0E8", fontFamily: "'DM Sans', sans-serif", fontSize: "0.88rem", padding: "0.6rem 0.8rem", width: "100%", minHeight: 120, resize: "vertical", lineHeight: 1.5, outline: "none" }}
+                      />
+                      <button
+                        onClick={() => saveFinal(item)}
+                        disabled={!finalTexts[item.id]?.trim()}
+                        style={{ marginTop: "0.5rem", padding: "0.55rem 1.3rem", background: "transparent", border: `1px solid ${finalSaved[item.id] ? "#6A8A6A" : G}`, color: finalSaved[item.id] ? "#6A8A6A" : GL, fontFamily: "'DM Sans', sans-serif", fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", cursor: "pointer", borderRadius: 2 }}
+                      >
+                        {finalSaved[item.id] ? "Elmentve ✓" : "Mentés referenciák közé"}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
