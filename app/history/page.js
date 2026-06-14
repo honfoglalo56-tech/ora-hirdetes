@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 const G = "#C9A84C";
@@ -16,12 +16,10 @@ export default function HistoryPage() {
   const [deleting, setDeleting] = useState(null);
   const [copied, setCopied] = useState(null);
 
-  useEffect(() => { loadHistory(); }, []);
-
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/history");
+      const res = await fetch("/api/history", { cache: "no-store" });
       const data = await res.json();
       setItems(data.data || []);
     } catch (err) {
@@ -29,15 +27,19 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
 
   const deleteItem = async (id) => {
     if (!confirm("Biztosan törlöd ezt az előzményt?")) return;
     setDeleting(id);
     try {
-      await fetch(`/api/history/${id}`, { method: "DELETE" });
-      setItems(items.filter(r => r.id !== id));
-      if (expanded === id) setExpanded(null);
+      const res = await fetch(`/api/history/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        await loadHistory();
+        if (expanded === id) setExpanded(null);
+      }
     } catch (err) {
       console.error(err);
     } finally {
