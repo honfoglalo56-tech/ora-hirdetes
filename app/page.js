@@ -70,11 +70,27 @@ export default function Page() {
 
   const onDrop = useCallback((e) => { e.preventDefault(); setDrag(false); handleFile(e.dataTransfer.files[0]); }, []);
 
-  const callAPI = async (body) => {
-    const res = await fetch("/api/generate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    return data.text;
+  const callAPI = async (body, retries = 1) => {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 65000);
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal: controller.signal
+      });
+      clearTimeout(timeout);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+      return data.text;
+    } catch (err) {
+      if (retries > 0) {
+        await new Promise(r => setTimeout(r, 2000));
+        return callAPI(body, retries - 1);
+      }
+      throw err;
+    }
   };
 
   const startProgress = () => {
