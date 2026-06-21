@@ -61,7 +61,7 @@ export default function Page() {
 
   const handleFile = (file) => {
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) { setError("A kép túl nagy (max 10MB)."); return; }
+    if (file.size > 30 * 1024 * 1024) { setError("A kép túl nagy (max 30MB)."); return; }
     setImageType(file.type);
     const reader = new FileReader();
     reader.onload = (e) => { setImageB64(e.target.result.split(",")[1]); setPreview(e.target.result); };
@@ -201,7 +201,7 @@ export default function Page() {
                 <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <strong style={{ display: "block", color: CD, fontSize: "0.9rem", marginBottom: "0.25rem" }}>Húzd ide a képet vagy kattints</strong>
-              <span style={{ color: MU, fontSize: "0.8rem" }}>JPG, PNG – maximum 10MB</span>
+              <span style={{ color: MU, fontSize: "0.8rem" }}>JPG, PNG – maximum 30MB</span>
             </div>
           ) : (
             <div style={{ textAlign: "center" }}>
